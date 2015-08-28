@@ -1,0 +1,11 @@
+{
+    "name": "preprocess-brunch",
+    "author": {
+        "name": "Flaise"
+    },
+    "version": "0.0.1",
+    "dependencies": {
+        "preprocess": "git+https://github.com/Flaise/preprocess.git",
+        "glob": "4.3.5"
+    }
+}
