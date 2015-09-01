@@ -10,7 +10,7 @@ function Preprocess(config) {
     var preprocessConfig = config.plugins.preprocess || {}
     
     this.context = preprocessConfig.context || {}
-    this.postCompilePattern = preprocessConfig.postCompilePattern
+    this.postCompilePattern = preprocessConfig.postCompilePattern || /\.html$/
     this.stackTraces = preprocessConfig.stackTraces || false
     this.config = config
 }
