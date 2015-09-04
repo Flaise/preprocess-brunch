@@ -12,6 +12,10 @@ function Preprocess(config) {
     this.context = preprocessConfig.context || {}
     this.postCompilePattern = preprocessConfig.postCompilePattern || /\.html$/
     this.stackTraces = preprocessConfig.stackTraces || false
+    if(preprocessConfig.pattern)
+        this.pattern = preprocessConfig.pattern
+    if(preprocessConfig.extension)
+        this.extension = preprocessConfig.extension
     this.config = config
 }
 Preprocess.prototype.brunchPlugin = true
@@ -63,10 +67,9 @@ function doPreprocess(source, sourcePath, context) {
     if(sourcePath.indexOf('node_modules') === 0)
         return source
     
-    var type = path.extname(sourcePath)
-    if(type === '.es6')
-        type = '.js'
-    type = type.replace('.', '')
+    var type = path.extname(sourcePath).replace('.', '')
+    if(type === 'es6' || type === 'tag')
+        type = 'js'
 
     return preprocessLib.preprocess(source, context, {type: type})
 }
