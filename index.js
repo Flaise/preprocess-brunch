@@ -7,35 +7,47 @@ var glob = require('glob')
 
 
 function Preprocess(config) {
-    var preprocessConfig = config.plugins.preprocess || {}
-    
-    this.context = preprocessConfig.context || {}
-    this.postCompilePattern = preprocessConfig.postCompilePattern || /\.html$/
-    this.stackTraces = preprocessConfig.stackTraces || false
-    if(preprocessConfig.pattern)
-        this.pattern = preprocessConfig.pattern
-    if(preprocessConfig.extension)
-        this.extension = preprocessConfig.extension
     this.config = config
+    this.localConfig = Object.create(this.config.plugins.preprocess) || {}
+    
+    if(this.localConfig.pattern)
+        this.pattern = this.localConfig.pattern
+    if(this.localConfig.extension)
+        this.extension = this.localConfig.extension
 }
 Preprocess.prototype.brunchPlugin = true
 Preprocess.prototype.type = 'javascript'
 Preprocess.prototype.pattern = /\.(es6|jsx|js|html)$/
 
-Preprocess.prototype.compile = function(params, next) {
+// Object.defineProperty(Preprocess.prototype, 'localConfig', {get: function() {
+//     return this.config.plugins.preprocess || {}
+// }})
+
+function compileImpl(params, next) {
     try {
-        next(undefined, doPreprocess(params.data, params.path, this.context))
+        next(undefined, doPreprocess(params.data, params.path, this.localConfig.context))
     }
     catch(err) {
-        if(this.stackTraces && err.stack)
+        if(this.localConfig.stackTraces && err.stack)
             next('\n' + err.stack + '\n')
         else
             next('\n' + err + '\n')
     }
 }
 
+Preprocess.prototype.compile = function(params, next) {
+    if(this.localConfig.precompile)
+        this.localConfig.precompile(this.localConfig, function(err) {
+            if(err)
+                return next(err)
+            compileImpl.call(this, params, next)
+        }.bind(this))
+    else
+        compileImpl.call(this, params, next)
+}
+
 Preprocess.prototype.onCompile = function(generatedFiles) {
-    if(!this.postCompilePattern)
+    if(!this.localConfig.postCompilePattern)
         return
     
     var publicFolder = this.config.paths.public
@@ -45,15 +57,14 @@ Preprocess.prototype.onCompile = function(generatedFiles) {
     var files = []
     urls.forEach(function(url) {
         var file = urlToFile(url, publicFolder)
-        if(this.postCompilePattern.test(file))
+        if(this.localConfig.postCompilePattern.test(file))
             files.push(file)
     }.bind(this))
-    
     
     files.forEach(function(file) {
         var content = fs.readFileSync(file)
         
-        var output = doPreprocess(content, file, this.context)
+        var output = doPreprocess(content, file, this.localConfig.context)
         
         fs.writeFileSync(file, output)
     }.bind(this))
@@ -73,7 +84,6 @@ function doPreprocess(source, sourcePath, context) {
 
     return preprocessLib.preprocess(source, context, {type: type})
 }
-
 
 
 module.exports = Preprocess
